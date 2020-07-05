@@ -4,13 +4,21 @@
 Servo arm;
 int servo_pin = 9;
 
-char values[6];
+int values[4];
+char buf[50];
 String incoming; 
 
-int motorLeftPWMA = 23;
-int motorLeftPWMB = 22;
-int motorRightPWMA = 19;
-int motorRightPWMB = 18;
+int STOP[4] = {0, 0, 0, 0};
+int FORWARD[4] = {235, 0, 235, 0};
+int BACKWARD[4] = {0, 255, 0, 255};
+int TURN[4] = {0, 255, 255, 0};
+
+int motorLeftPWMA = 21;
+int motorLeftPWMB = 20;
+int motorRightPWMA = 9;
+int motorRightPWMB = 10;
+
+int rightMotorOffset = 0;
  
 void setup() {
   Serial.begin(9600);
@@ -23,6 +31,8 @@ void setup() {
   pinMode(motorRightPWMA, OUTPUT);
   pinMode(motorRightPWMB, OUTPUT);
 
+  driveTest(); // Test motors 
+
 }
 
 void loop() {
@@ -30,10 +40,33 @@ void loop() {
     incoming = HWSERIAL.readString();
     HWSERIAL.flush();
     Serial.println(incoming);
+    incoming.toCharArray(buf, 50);
+    int_extractor(buf, values, ',');
+    drive(values);
   }
+
+  drive(STOP); // STOP if no serial input detected
 }
 
-void int_extractor(char* data_array, int* output_values, char delimiter){
+void drive(int* command) {
+   analogWrite(motorLeftPWMA, constrain(command[0], 0, 255));
+   analogWrite(motorLeftPWMB, constrain(command[1], 0, 255));
+   analogWrite(motorRightPWMA, constrain(command[2] - rightMotorOffset, 0, 255));
+   analogWrite(motorRightPWMB, constrain(command[3] - rightMotorOffset, 0, 255));
+}
+
+void driveTest(){
+  drive(FORWARD);
+  delay(10000);
+//  drive(BACKWARD);
+//  delay(5000);
+//  drive(TURN);
+//  delay(5000);
+//  drive(STOP);
+//  delay(5000);
+}
+
+void int_extractor(char* data_array, int* output_values, char delimiter) {
     char* ptr;
     char* delPointer = &delimiter;
     ptr = strtok(data_array, delPointer);
