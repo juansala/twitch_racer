@@ -19,6 +19,9 @@ int motorRightPWMA = 9;
 int motorRightPWMB = 10;
 
 int rightMotorOffset = 0;
+
+float timer;
+float TIMEOUT = 3000;
  
 void setup() {
   Serial.begin(9600);
@@ -43,10 +46,13 @@ void loop() {
     incoming.toCharArray(buf, 50);
     int_extractor(buf, values, ',');
     dispValues();
-//    drive(values);
+    drive(values);
+    timer = millis();
   }
-
-  drive(STOP); // STOP if no serial input detected
+  
+  if (millis() - timer > TIMEOUT){ // STOP if stopped receiving bytes for longer than 3 seconds
+    drive(STOP);
+  }
 }
 
 void drive(int* command) {
