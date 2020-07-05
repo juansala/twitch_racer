@@ -4,10 +4,11 @@ import time
 from datetime import datetime
 
 ser = serial.Serial('/dev/serial0', 9600)
-test_string = "1,1,1,1"
+test_string = "0,0,0,0"
+g = raw_input("Enter command: ")
 
 while True:
-    ser.write(test_string)
+    ser.write(g)
     ser.flush()
-    print(test_string)
+    print(g)
     time.sleep(1)
