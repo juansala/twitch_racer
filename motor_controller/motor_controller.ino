@@ -31,7 +31,7 @@ void setup() {
   pinMode(motorRightPWMA, OUTPUT);
   pinMode(motorRightPWMB, OUTPUT);
 
-  driveTest(); // Test motors 
+//  driveTest(); // Test motors 
 
 }
 
@@ -39,10 +39,11 @@ void loop() {
   while (HWSERIAL.available())  {
     incoming = HWSERIAL.readString();
     HWSERIAL.flush();
-    Serial.println(incoming);
+//    Serial.println(incoming);
     incoming.toCharArray(buf, 50);
     int_extractor(buf, values, ',');
-    drive(values);
+    dispValues();
+//    drive(values);
   }
 
   drive(STOP); // STOP if no serial input detected
@@ -64,6 +65,14 @@ void driveTest(){
 //  delay(5000);
 //  drive(STOP);
 //  delay(5000);
+}
+
+void dispValues(){
+  for (int i = 0; i < 4; i++){
+    Serial.print(values[i]);
+    Serial.print(",");
+  }
+  Serial.println();
 }
 
 void int_extractor(char* data_array, int* output_values, char delimiter) {
