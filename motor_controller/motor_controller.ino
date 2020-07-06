@@ -21,7 +21,7 @@ int motorRightPWMB = 10;
 int rightMotorOffset = 0;
 
 float timer;
-float TIMEOUT = 3000; 
+float TIMEOUT = 250; 
  
 void setup() {
   Serial.begin(9600);
