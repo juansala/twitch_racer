@@ -24,6 +24,7 @@ import subprocess
 import ctypes
 import random
 import string
+import serial
 
 # Twitch imports
 import TwitchPlays_Connection
@@ -34,34 +35,16 @@ import pyautogui
 import pynput
 from pynput.mouse import Button, Controller
 
-SendInput = ctypes.windll.user32.SendInput
+#SendInput = ctypes.windll.user32.SendInput
 
-# KEY PRESS NOTES
-# The standard "Twitch Plays" tutorial key commands do NOT work in DirectX games (they only work in general windows applications)
-# Instead, we use DirectX key codes and input functions below.
-# This DirectX code is partially sourced from: https://stackoverflow.com/questions/53643273/how-to-keep-pynput-and-ctypes-from-clashing
+# Serial port init
+ser = serial.Serial('/dev/serial0', 9600)
 
-# Presses and permanently holds down a keyboard key
-def PressKeyPynput(hexKeyCode):
-    extra = ctypes.c_ulong(0)
-    ii_ = pynput._util.win32.INPUT_union()
-    ii_.ki = pynput._util.win32.KEYBDINPUT(0, hexKeyCode, 0x0008, 0, ctypes.cast(ctypes.pointer(extra), ctypes.c_void_p))
-    x = pynput._util.win32.INPUT(ctypes.c_ulong(1), ii_)
-    SendInput(1, ctypes.pointer(x), ctypes.sizeof(x))
-
-# Releases a keyboard key if it is currently pressed down
-def ReleaseKeyPynput(hexKeyCode):
-    extra = ctypes.c_ulong(0)
-    ii_ = pynput._util.win32.INPUT_union()
-    ii_.ki = pynput._util.win32.KEYBDINPUT(0, hexKeyCode, 0x0008 | 0x0002, 0, ctypes.cast(ctypes.pointer(extra), ctypes.c_void_p))
-    x = pynput._util.win32.INPUT(ctypes.c_ulong(1), ii_)
-    SendInput(1, ctypes.pointer(x), ctypes.sizeof(x))
-
-# Helper function. Holds down a key for the specified number of seconds, then releases it.
-def PressAndHoldKey(hexKeyCode, seconds):
-    PressKeyPynput(hexKeyCode)
-    time.sleep(seconds)
-    ReleaseKeyPynput(hexKeyCode)
+# Serial write helper function.
+def writeCmd(cmd):
+    ser.write(cmd)
+    ser.flush()
+    print(cmd)
 
 # Mouse Controller, using pynput
     # pynput.mouse functions are found at: https://pypi.org/project/pynput/
@@ -194,60 +177,25 @@ while True:
                 # Example GTA V Code 
                 ###################################
 
-                # If the chat message is "left", then hold down the A key for 2 seconds
-                if msg == "left": 
-                    PressAndHoldKey(A, 2)
+                # If the chat message is "teft", then send turn left command
+                if msg == "teft": 
+                    writeCmd("255,0,0,255")
 
-                # If the chat message is "right", then hold down the D key for 2 seconds
-                if msg == "right": 
-                    PressAndHoldKey(D, 2)
+                # If the chat message is "tight", then send turn right command
+                if msg == "tight": 
+                    writeCmd("0,255,255,0")
 
-                # If message is "drive", then permanently hold down the W key
-                if msg == "drive": 
-                    ReleaseKeyPynput(S) #release brake key first
-                    PressKeyPynput(W) #start permanently driving
+                # If message is "forward", then send a drive forward command
+                if msg == "forward": 
+                    writeCmd("255,0,255,0")
 
-                # If message is "reverse", then permanently hold down the S key
+                # If message is "reverse", then send a drive reverse command
                 if msg == "reverse": 
-                    ReleaseKeyPynput(W) #release drive key first
-                    PressKeyPynput(S) #start permanently reversing
-
-                # Release both the "drive" and "reverse" keys
+                   writeCmd("0,255,0,255")
+                # Send a stop command
                 if msg == "stop": 
-                    ReleaseKeyPynput(W)
-                    ReleaseKeyPynput(S)
+                   writeCmd("0,0,0,0")
 
-                # Press the spacebar for 0.7 seconds
-                if msg == "brake": 
-                    PressAndHoldKey(SPACE, 0.7)
-
-                # Presses the left mouse button down for 1 second, then releases it
-                if msg == "shoot": 
-                    mouse.press(Button.left)
-                    time.sleep(1)
-                    mouse.release(Button.left)
-
-                ###################################
-                # Example Miscellaneous Code 
-                ###################################
-                
-                # Clicks and drags the mouse upwards, using the Pyautogui commands.
-                # NOTE: unfortunately, Pyautogui does not work in DirectX games like GTA V. It will work in all other environments (e.g. on your desktop)
-                # If anyone finds a reliable way to move the mouse in DirectX games, please let me know!
-                if msg == "drag mouse up":
-                    pyautogui.drag(0, -50, 0.25, button='left')
-
-                # Clicks and drags the mouse downwards, using the Pyautogui commands
-                if msg == "drag mouse down":
-                    pyautogui.drag(0, 50, 0.25, button='left')
-
-                # An example of pressing 2 keys at once.
-                # First holds down the LEFT_CONTROL key, then presses the A key for 0.1 seconds, then releases the LEFT_CONTROL key.
-                if msg == "select all":
-                    PressKeyPynput(LEFT_CONTROL)
-                    PressAndHoldKey(A, 0.1)
-                    ReleaseKeyPynput(LEFT_CONTROL)
-                
                 # Can use pyautogui.typewrite() to type messages from chat into the keyboard.
                 # Here, if a chat message says "type ...", it will type out their text.
                 if msg.startswith("type "): 
