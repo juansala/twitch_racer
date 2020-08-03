@@ -56,11 +56,21 @@ class SerialBridge():
 
         return bytearray(res)
 
+    def runOnce(self, cmd):
+        self._mbedSerial.flushInput()
+        self._mbedSerial.flushOutput()
+        self.writeBytes(cmd)
+
     def run(self):
         pass
 
     def callback(self, msg):
-        pass
+        cmd = msg.data
+        arr = cmd.split(",")
+        for i in range(len(arr)):
+            arr[i] = int(arr[i])
+        self.runOnce(arr)
+        rospy.loginfo(arr)
 
 if __name__ == '__main__':
     import sys
