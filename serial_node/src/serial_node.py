@@ -13,7 +13,8 @@ class SerialBridge():
     #COMMAND_TOPIC = "command"
 
     def __init__(self, mbedPort='/dev/serial0', mbedBaud = 115200, mbedUpdateInterval=1.25):
-        rospy.loginfo("Serial node started.")
+        #rospy.loginfo("Serial node started.")
+        print('Serial node started.')
         
         self.pub = rospy.Publisher("measurements", String, queue_size=1)
         rospy.Subscriber("command", String, self.callback)
@@ -62,7 +63,12 @@ class SerialBridge():
         self.writeBytes(cmd)
 
     def run(self):
-        pass
+        while not rospy.is_shutdown():
+            if self._mbedSerial.inWaiting():
+                bytesToRead = self._mbedSerial.inWaiting()
+                x = self._mbedSerial.read(bytesToRead)
+                print(x)
+                #rospy.loginfo(x)
 
     def callback(self, msg):
         cmd = msg.data
@@ -70,11 +76,13 @@ class SerialBridge():
         for i in range(len(arr)):
             arr[i] = int(arr[i])
         self.runOnce(arr)
-        rospy.loginfo(arr)
+        print(arr)
+        #rospy.loginfo(arr)
 
 if __name__ == '__main__':
     import sys
     # update_hz = 30
     rospy.init_node('serial', anonymous=True)
     piSerial = SerialBridge()
+    piSerial.run()
     rospy.spin()
