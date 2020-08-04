@@ -67,7 +67,7 @@ class SerialBridge():
             if self._mbedSerial.inWaiting():
                 bytesToRead = self._mbedSerial.inWaiting()
                 x = self._mbedSerial.read(bytesToRead)
-                print(x)
+                print(x),
                 #rospy.loginfo(x)
 
     def callback(self, msg):
