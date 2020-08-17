@@ -6,7 +6,7 @@ import math
 import rospy
 from rospy.numpy_msg import numpy_msg
 from sensor_msgs.msg import LaserScan
-from ackermann_msgs.msg import AckermannDriveStamped
+#from ackermann_msgs.msg import AckermannDriveStamped
 from visualization_msgs.msg import Marker
 from geometry_msgs.msg import Point
 
@@ -22,7 +22,7 @@ class WallFollower:
 
     def __init__(self):
 
-        self.pub = rospy.Publisher(self.DRIVE_TOPIC, AckermannDriveStamped, queue_size=10)
+        #self.pub = rospy.Publisher(self.DRIVE_TOPIC, AckermannDriveStamped, queue_size=10)
 	self.line_pub = rospy.Publisher("my_special_line", Marker, queue_size=10)
 	rospy.Subscriber(self.SCAN_TOPIC, LaserScan, self.callback)
 	self.min_side_angle = -math.pi/12 if self.SIDE == 1 else -3*math.pi/4
@@ -40,29 +40,47 @@ class WallFollower:
     def callback(self, data):
         # Parse LaserScan into slices (side and front)
 	slice, angles = self.slice_data(data, self.min_side_angle, self.max_side_angle)
+        #rospy.loginfo(angles)
 	x, y = self.polar2cartesian(slice, angles)
+        #rospy.loginfo(y)
 
 	# Find the wall using numpy.lstsq and compute distance 
         A = np.vstack([x, np.ones(len(x))]).T
+        #rospy.loginfo(A)
         m, c = np.linalg.lstsq(A, y, rcond=-1)[0]
         self.distance = c/math.sqrt(m**2 + 1)
 
 	# Visualize line
 	line_msg = Marker()
 	line_msg.type = Marker.LINE_STRIP
-	line_msg.header.frame_id = 'base_link'
+	line_msg.header.frame_id = 'laser'
 	line_msg.header.stamp = rospy.get_rostime()
-	line_msg.scale.x = 0.3
-	line_msg.scale.y = 0.3
-	line_msg.scale.z = 0.3
+	line_msg.scale.x = 0.1
+	line_msg.scale.y = 0.1
+	line_msg.scale.z = 0.1
 	line_msg.action = Marker.ADD
 	line_msg.color.a = 1.0
-	line_msg.color.r = 1.0
-	line_msg.color.g = 0.0
+	line_msg.color.r = 0.0
+	line_msg.color.g = 1.0
 	line_msg.color.b = 0.0
+        line_msg.pose.orientation.x = 0.0
+        line_msg.pose.orientation.y = 0.0
+        line_msg.pose.orientation.z = 0.0
+        line_msg.pose.orientation.w = 1.0
 	
 	vis_x = np.array([i for i in x])
 	vis_y = vis_x * m + c
+        #vis_y = y
+
+        #rospy.loginfo(vis_x)
+        #rospy.loginfo(vis_y)
+        #rospy.loginfo(m)
+        #rospy.loginfo(c)
+
+        # Marker debugging
+        #vis_x = np.array([1, 2, 3, 4, 5])
+        #vis_y = np.array([2, 4, 6, 8, 10])
+
 	points = []
 	for i in range(len(x)):
 	    point = Point()
@@ -77,15 +95,15 @@ class WallFollower:
 	input = self.PID(self.DESIRED_DISTANCE - abs(self.distance))
 
 	# Prepare and publish command
-	command = AckermannDriveStamped()
-	command.drive.steering_angle = -self.SIDE * input
-	command.drive.steering_angle_velocity = 0.0
-	command.drive.speed = self.VELOCITY; # m/s
-	command.drive.acceleration = 0.0
+	#command = AckermannDriveStamped()
+	#command.drive.steering_angle = -self.SIDE * input
+	#command.drive.steering_angle_velocity = 0.0
+	#command.drive.speed = self.VELOCITY; # m/s
+	#command.drive.acceleration = 0.0
 	#command.drive.jerk =
-	self.pub.publish(command)
+	#self.pub.publish(command)
 	#rospy.loginfo(rospy.get_caller_id() + 'Slope: %4.3f', m)
-	rospy.loginfo(rospy.get_caller_id() + 'Distance: %4.3f', self.distance)
+	#rospy.loginfo(rospy.get_caller_id() + 'Distance: %4.3f', self.distance)
 	#rospy.loginfo(rospy.get_caller_id() + 'angle_max: %4.3f', data.angle_min)
 
 
@@ -95,6 +113,8 @@ class WallFollower:
 	slice_index_max = int((max_scangle - data.angle_min)/data.angle_increment)
 	angles = np.array([min_scangle + i*data.angle_increment for i in range(slice_index_max - slice_index_min)])
 	slice = full_data[slice_index_min: slice_index_max]
+        angles = angles[(slice >= data.range_min) & (slice <= data.range_max)]
+        slice = slice[(slice >= data.range_min) & (slice <= data.range_max)]
 	return slice, angles
 
     def polar2cartesian(self, r, theta):
