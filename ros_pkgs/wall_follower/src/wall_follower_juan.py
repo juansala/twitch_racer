@@ -25,8 +25,8 @@ class WallFollower:
         #self.pub = rospy.Publisher(self.DRIVE_TOPIC, AckermannDriveStamped, queue_size=10)
 	self.line_pub = rospy.Publisher("my_special_line", Marker, queue_size=10)
 	rospy.Subscriber(self.SCAN_TOPIC, LaserScan, self.callback)
-	self.min_side_angle = -math.pi/12 if self.SIDE == 1 else -3*math.pi/4
-	self.max_side_angle = math.pi/3 if self.SIDE == 1 else  0.0
+	self.min_side_angle = math.pi - math.pi/3 if self.SIDE == 1 else -math.pi + math.pi/12 # min/max side angle ordering matters, use common sense, use Slamtech's provided frame image for reference
+	self.max_side_angle = math.pi - math.pi/12 if self.SIDE == 1 else  -math.pi + math.pi/3
 	self.distance = 0
 	self.error = 0
 	self.error_rate = 0
@@ -70,7 +70,7 @@ class WallFollower:
 	
 	vis_x = np.array([i for i in x])
 	vis_y = vis_x * m + c
-        #vis_y = y
+        vis_y = y
 
         #rospy.loginfo(vis_x)
         #rospy.loginfo(vis_y)
@@ -108,12 +108,15 @@ class WallFollower:
 
 
     def slice_data(self, data, min_scangle, max_scangle):
-	full_data = np.array(data.ranges) 
+	full_data = np.array(data.ranges)
 	slice_index_min = int((min_scangle - data.angle_min)/data.angle_increment) 
 	slice_index_max = int((max_scangle - data.angle_min)/data.angle_increment)
 	angles = np.array([min_scangle + i*data.angle_increment for i in range(slice_index_max - slice_index_min)])
 	slice = full_data[slice_index_min: slice_index_max]
-        angles = angles[(slice >= data.range_min) & (slice <= data.range_max)]
+        #angles = angles[(slice >= data.range_min) & (slice <= data.range_max)]
+        #rospy.loginfo(data.angle_max)
+        #rospy.loginfo(data.angle_min)
+        angles = np.array([angles[i] for i in range(np.size(angles)) if (slice[i] >= data.range_min and slice[i] <= data.range_max)])
         slice = slice[(slice >= data.range_min) & (slice <= data.range_max)]
 	return slice, angles
 
