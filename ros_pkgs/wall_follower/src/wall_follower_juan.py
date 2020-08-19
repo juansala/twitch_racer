@@ -6,6 +6,7 @@ import math
 import rospy
 from rospy.numpy_msg import numpy_msg
 from sensor_msgs.msg import LaserScan
+from std_msgs.msg import String
 #from ackermann_msgs.msg import AckermannDriveStamped
 from visualization_msgs.msg import Marker
 from geometry_msgs.msg import Point
@@ -22,7 +23,7 @@ class WallFollower:
 
     def __init__(self):
 
-        #self.pub = rospy.Publisher(self.DRIVE_TOPIC, AckermannDriveStamped, queue_size=10)
+        self.cmd_pub = rospy.Publisher(self.DRIVE_TOPIC, String, queue_size=10)
 	self.line_pub = rospy.Publisher("my_special_line", Marker, queue_size=10)
 	rospy.Subscriber(self.SCAN_TOPIC, LaserScan, self.callback)
 	self.min_side_angle = math.pi - math.pi/3 if self.SIDE == 1 else -math.pi + math.pi/12 # min/max side angle ordering matters, use common sense, use Slamtech's provided frame image for reference
@@ -32,8 +33,8 @@ class WallFollower:
 	self.error_rate = 0
 	self.error_sum = 0
 	self.prev_error = 0
-	self.Kp = 2.2
-	self.Kd = 0.6 #0.3
+	self.Kp = 1 #2.2
+	self.Kd = 0 #0.6 #0.3
 	self.Ki = 0
 
 
@@ -70,7 +71,7 @@ class WallFollower:
 	
 	vis_x = np.array([i for i in x])
 	vis_y = vis_x * m + c
-        vis_y = y
+        #vis_y = y
 
         #rospy.loginfo(vis_x)
         #rospy.loginfo(vis_y)
@@ -95,15 +96,13 @@ class WallFollower:
 	input = self.PID(self.DESIRED_DISTANCE - abs(self.distance))
 
 	# Prepare and publish command
-	#command = AckermannDriveStamped()
-	#command.drive.steering_angle = -self.SIDE * input
-	#command.drive.steering_angle_velocity = 0.0
-	#command.drive.speed = self.VELOCITY; # m/s
-	#command.drive.acceleration = 0.0
-	#command.drive.jerk =
-	#self.pub.publish(command)
+	command = String()
+        left_speed = self.constrain(220 + input, 0, 255)
+        right_speed = self.constrain(220 - input, 0, 255)
+	command.data = str(left_speed) + ",0," + str(right_speed) + ",0"
+        self.cmd_pub.publish(command)
 	#rospy.loginfo(rospy.get_caller_id() + 'Slope: %4.3f', m)
-	#rospy.loginfo(rospy.get_caller_id() + 'Distance: %4.3f', self.distance)
+	rospy.loginfo(rospy.get_caller_id() + 'Distance: %4.3f', self.distance)
 	#rospy.loginfo(rospy.get_caller_id() + 'angle_max: %4.3f', data.angle_min)
 
 
@@ -131,6 +130,9 @@ class WallFollower:
 	self.error_sum = self.error_sum + self.error * 0.05
 	self.prev_error = self.error
 	return self.Kp*self.error + self.Kd*self.error_rate + self.Ki*self.error_sum 
+
+    def constrain(self, val, min_val, max_val):
+        return min(max_val, max(min_val, val))
 
 if __name__ == "__main__":
     rospy.init_node('wall_follower')
