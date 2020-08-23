@@ -40,7 +40,7 @@ void setup() {
 
 void loop() {
   while (HWSERIAL.available())  {
-    incoming = HWSERIAL.readString();
+    incoming = HWSERIAL.readStringUntil('\n');
     HWSERIAL.flush();
 //    Serial.println(incoming);
     incoming.toCharArray(buf, 50);
