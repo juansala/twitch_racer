@@ -25,7 +25,7 @@ class WallFollower:
 
         self.cmd_pub = rospy.Publisher(self.DRIVE_TOPIC, String, queue_size=10)
 	self.line_pub = rospy.Publisher("my_special_line", Marker, queue_size=10)
-	rospy.Subscriber(self.SCAN_TOPIC, LaserScan, self.callback)
+	rospy.Subscriber(self.SCAN_TOPIC, LaserScan, self.cb)
 	self.min_side_angle = math.pi - math.pi/3 if self.SIDE == 1 else -math.pi + math.pi/12 # min/max side angle ordering matters, use common sense, use Slamtech's provided frame image for reference
 	self.max_side_angle = math.pi - math.pi/12 if self.SIDE == 1 else  -math.pi + math.pi/3
 	self.distance = 0
@@ -37,8 +37,17 @@ class WallFollower:
 	self.Kd = 0 #0.6 #0.3
 	self.Ki = 0
 
+        self.scan = None
+        rate = rospy.Rate(10) # publish commands at 10 Hz
+        while not rospy.is_shutdown():
+            if self.scan is not None:
+                self.output(self.scan)
+            rate.sleep()
 
-    def callback(self, data):
+    def cb(self, msg):
+        self.scan = msg
+
+    def output(self, data):
         # Parse LaserScan into slices (side and front)
 	slice, angles = self.slice_data(data, self.min_side_angle, self.max_side_angle)
         #rospy.loginfo(angles)
@@ -97,9 +106,9 @@ class WallFollower:
 
 	# Prepare and publish command
 	command = String()
-        left_speed = self.constrain(220 + input, 0, 255)
-        right_speed = self.constrain(220 - input, 0, 255)
-	command.data = str(left_speed) + ",0," + str(right_speed) + ",0"
+        left_speed = self.constrain(240 + input, 0, 255)
+        right_speed = self.constrain(240 - input, 0, 255)
+	command.data = str(int(left_speed)) + ",0," + str(int(right_speed)) + ",0"
         self.cmd_pub.publish(command)
 	#rospy.loginfo(rospy.get_caller_id() + 'Slope: %4.3f', m)
 	rospy.loginfo(rospy.get_caller_id() + 'Distance: %4.3f', self.distance)
