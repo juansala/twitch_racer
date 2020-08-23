@@ -50,7 +50,7 @@ class SerialBridge():
                     self.buf = []
 
     def cmd_cb(self, msg):
-        cmd = msg.data
+        cmd = msg.data + "\n"
         self._teensySerial.flushInput()
         self._teensySerial.flushOutput()
         self._teensySerial.write(cmd)
