@@ -27,13 +27,13 @@ class WallFollower:
 	self.line_pub = rospy.Publisher("my_special_line", Marker, queue_size=10)
 	rospy.Subscriber(self.SCAN_TOPIC, LaserScan, self.cb)
 	self.min_side_angle = math.pi - math.pi/3 if self.SIDE == 1 else -math.pi + math.pi/12 # min/max side angle ordering matters, use common sense, use Slamtech's provided frame image for reference
-	self.max_side_angle = math.pi - math.pi/12 if self.SIDE == 1 else  -math.pi + math.pi/3
+	self.max_side_angle = math.pi - math.pi/12 if self.SIDE == 1 else  -math.pi + math.pi/2 #+ math.pi/3
 	self.distance = 0
 	self.error = 0
 	self.error_rate = 0
 	self.error_sum = 0
 	self.prev_error = 0
-	self.Kp = 1 #2.2
+	self.Kp = 10.0 #2.2
 	self.Kd = 0 #0.6 #0.3
 	self.Ki = 0
 
@@ -106,8 +106,8 @@ class WallFollower:
 
 	# Prepare and publish command
 	command = String()
-        left_speed = self.constrain(240 + input, 0, 255)
-        right_speed = self.constrain(240 - input, 0, 255)
+        left_speed = self.constrain(220 + 60*input, 0, 255)
+        right_speed = self.constrain(220 - 60*input, 0, 255)
 	command.data = str(int(left_speed)) + ",0," + str(int(right_speed)) + ",0"
         self.cmd_pub.publish(command)
 	#rospy.loginfo(rospy.get_caller_id() + 'Slope: %4.3f', m)
