@@ -58,7 +58,15 @@ class SerialBridge():
         #rospy.loginfo(cmd)
 
     def key_cb(self, msg):
-        pass
+        cmd = '0,0,0,0\n'
+        self._teensySerial.flushInput()
+        self._teensySerial.flushOutput()
+        if msg.angular.z == 1.0:
+            self._teensySerial.write('255,0,0,255\n')
+        elif msg.angular.z == -1.0:
+            self._teensySerial.write('0,255,255,0\n')
+        elif msg.linear.x != 0.0:
+            self._teensySerial.write('255,0,255,0\n')
 
 if __name__ == '__main__':
     import sys
