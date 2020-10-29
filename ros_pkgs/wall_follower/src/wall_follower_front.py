@@ -53,10 +53,10 @@ class WallFollower:
     def output(self, data):
 
         # Extract front left and front right data then concatenate
-        front_slice_right, front_angles_right = self.slice_data(data, self.front_angle_start, math.pi)
-        front_slice_left, front_angles_left = self.slice_data(data, -math.pi, self.front_angle_end)
-        front_slice = np.concatenate(front_slice_right, front_slice_left)
-        front_angles = np.concatenate(front_angles_right, front_angles_left)
+        front_slice_right, front_angles_right = self.slice_data(data, self.front_angle_start, math.pi - math.pi/12)
+        front_slice_left, front_angles_left = self.slice_data(data, -math.pi + math.pi/12, self.front_angle_end)
+        front_slice = np.concatenate((front_slice_right, front_slice_left))
+        front_angles = np.concatenate((front_angles_right, front_angles_left))
 
         # Compute average distance to front wall, relative to negative x axis (subtract by pi/2)
         distance_to_front = np.mean(np.multiply(front_slice, np.cos(front_angles - math.pi/2)))
@@ -68,8 +68,8 @@ class WallFollower:
         # Combine side and front scans before regression if close enough to front
         if distance_to_front < self.front_dist_threshold:
             # Account for repeats between front and side data (either fix with angle ranges or using numpy)
-            slice = np.concatenate(front_slice, slice)
-            angles = np.concatenate(front_angles, angles)
+            slice = np.concatenate((front_slice, slice))
+            angles = np.concatenate((front_angles, angles))
 
 	x, y = self.polar2cartesian(slice, angles)
         #rospy.loginfo(y)
