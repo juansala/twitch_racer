@@ -27,8 +27,8 @@ class WallFollower:
 	self.line_pub = rospy.Publisher("my_special_line", Marker, queue_size=10)
 	rospy.Subscriber(self.SCAN_TOPIC, LaserScan, self.cb)
         self.front_dist_threshold = 0.25
-        self.front_angle_start = math.pi - math.pi/3
-        self.front_angle_end = -math.pi + math.pi/3
+        self.front_angle_start = math.pi - math.pi/8
+        self.front_angle_end = -math.pi + math.pi/8
 	self.min_side_angle = math.pi - math.pi/3 if self.SIDE == 1 else -math.pi + math.pi/12 # min/max side angle ordering matters, use common sense, use Slamtech's provided frame image for reference
 	self.max_side_angle = math.pi - math.pi/12 if self.SIDE == 1 else  -math.pi + math.pi/2 #+ math.pi/3
 	self.distance = 0
@@ -59,17 +59,20 @@ class WallFollower:
         front_angles = np.concatenate((front_angles_right, front_angles_left))
 
         # Compute average distance to front wall, relative to negative x axis (subtract by pi/2)
-        distance_to_front = np.mean(np.multiply(front_slice, np.cos(front_angles - math.pi/2)))
+        distance_to_front = np.mean(np.multiply(front_slice, np.cos(front_angles - np.sign(front_angles)*math.pi)))
+        #print(distance_to_front)
 
         # Parse LaserScan into slices (side and/or front)
 	slice, angles = self.slice_data(data, self.min_side_angle, self.max_side_angle)
         #rospy.loginfo(angles)
 
         # Combine side and front scans before regression if close enough to front
-        if distance_to_front < self.front_dist_threshold:
+        if abs(distance_to_front) < self.front_dist_threshold:
             # Account for repeats between front and side data (either fix with angle ranges or using numpy)
             slice = np.concatenate((front_slice, slice))
             angles = np.concatenate((front_angles, angles))
+            print("FRONT")
+            #print(distance_to_front)
 
 	x, y = self.polar2cartesian(slice, angles)
         #rospy.loginfo(y)
@@ -97,7 +100,7 @@ class WallFollower:
         line_msg.pose.orientation.y = 0.0
         line_msg.pose.orientation.z = 0.0
         line_msg.pose.orientation.w = 1.0
-	
+
 	vis_x = np.array([i for i in x])
 	vis_y = vis_x * m + c
         #vis_y = y
@@ -108,11 +111,11 @@ class WallFollower:
         #rospy.loginfo(c)
 
         # Marker debugging
-        #vis_x = np.array([1, 2, 3, 4, 5])
-        #vis_y = np.array([2, 4, 6, 8, 10])
+        vis_x, vis_y = self.polar2cartesian(front_slice, front_angles)
 
+        # Publish line strip
 	points = []
-	for i in range(len(x)):
+	for i in range(len(vis_x)):
 	    point = Point()
             point.x = vis_x[i]
 	    point.y = vis_y[i]
